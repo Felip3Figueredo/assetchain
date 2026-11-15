@@ -98,7 +98,7 @@ Na primeira subida o backend aplica as migrações e roda o seed (2 ativos em ra
 
 O script percorre o fluxo completo pela API: aprova o ativo, implanta o contrato, emite 10 milhões de tokens, transfere 100 mil da carteira A (tesouraria) para a B, consulta os saldos, o hash e o bloco da transação. Depois abra o dashboard.
 
-Para gravar um vídeo curto: rode `docker compose up --build`, abra o dashboard, execute `./scripts/demo.sh` em um terminal ao lado e mostre (1) o ativo, (2) o contrato implantado, (3) a transferência entre carteiras e (4) o hash e o bloco em *Transações*.
+O vídeo de demonstração é gerado automaticamente (com a stack no ar): `cd scripts/demo-video && npm i && npx playwright-core install ffmpeg && node record.mjs` (grava a interface com Playwright; `NODE_FAILURE=0` pula a parte de derrubar um validador no Besu). Para gravar manualmente: rode `docker compose up --build`, abra o dashboard, execute `./scripts/demo.sh` em um terminal ao lado e mostre (1) o ativo, (2) o contrato implantado, (3) a transferência entre carteiras e (4) o hash e o bloco em *Transações*.
 
 ### Screenshots
 
