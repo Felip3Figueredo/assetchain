@@ -6,3 +6,5 @@ artifacts/
 cache/
 typechain-types/
 dist/
+.pytest_cache/
+*.db
