@@ -6,6 +6,69 @@ AssetChain demonstra, de ponta a ponta, como um ativo do mundo real (aqui, a *Us
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
+## Início rápido
+
+**Você precisa de:** Docker com Compose v2 (`docker compose version`), cerca de 4 GB de RAM livres e as portas `5173`, `8000` e `8545` livres. Não precisa instalar Node nem Python.
+
+### 1. Subir tudo com um comando
+
+```bash
+git clone https://github.com/Felip3Figueredo/assetchain.git
+cd assetchain
+docker compose up --build
+```
+
+Na primeira vez o Docker baixa imagens e compila tudo (alguns minutos). Está pronto quando o log do backend mostrar `Application startup complete`. Isso sobe, já ligado entre si:
+
+| O quê | Onde |
+| --- | --- |
+| **Dashboard** (use este) | http://localhost:5173 |
+| API + Swagger | http://localhost:8000/docs |
+| Blockchain local (JSON-RPC) | http://localhost:8545 |
+| PostgreSQL | interno (não exposto) |
+
+O backend aplica as migrações e cadastra sozinho 2 ativos fictícios (em rascunho) e 3 carteiras de teste.
+
+### 2. Primeiro teste, em 3 minutos
+
+1. Abra http://localhost:5173 → **Ativos** → **Usina Solar Alpha**.
+2. Clique em **Aprovar para tokenização** e depois em **Implantar contrato e emitir tokens**. O backend implanta um contrato ERC-20 na blockchain e emite 10.000.000 tokens.
+3. Em **Transferir tokens**, escolha *Tesouraria → Carteira B*, quantidade `100000`, e clique em **Transferir tokens**. A tela mostra o bloco e o hash depois do recibo.
+4. Veja o resultado em **Carteiras** (saldos lidos da blockchain), **Transações** e **Painel**.
+
+Prefere pelo terminal? Com a stack no ar, `./scripts/demo.sh` executa o mesmo fluxo pela API.
+
+### 3. Variações
+
+| Quero… | Comando |
+| --- | --- |
+| Já subir com a Usina Solar tokenizada e uma transferência feita | `SEED_DEMO=true docker compose up --build` |
+| A rede **permissionada Hyperledger Besu** (4 validadores QBFT, aba **Rede** e fluxo entre nós) | `make up-besu` (ou `docker compose -f docker-compose.yml -f infrastructure/docker-compose.besu.yml up --build`) |
+| Proteger a API com chave | `API_KEY=minha-chave docker compose up --build` (o dashboard continua funcionando) |
+| Mudar senhas/portas/chaves | `cp .env.example .env` e edite |
+
+### 4. Parar e recomeçar do zero
+
+```bash
+# Ctrl+C no terminal onde subiu (ou em outro terminal:)
+docker compose down        # para, mantendo os dados
+docker compose down -v     # para e APAGA banco, chave de criptografia e blockchain
+```
+
+Se subiu o Besu, use `make down` (ou o `down -v` com os dois `-f`).
+
+### Problemas comuns
+
+| Sintoma | O que fazer |
+| --- | --- |
+| `port is already allocated` | Outra aplicação usa 5173, 8000 ou 8545. Pare-a ou mude a porta em `infrastructure/docker-compose.yml`. |
+| Painel mostra **Rede offline** | A blockchain ainda está iniciando (no Besu leva ~30 s para os nós se conectarem). Espere e recarregue. |
+| Reiniciei só a blockchain e os dados sumiram | Esperado: a rede de desenvolvimento não persiste estado. O backend detecta, limpa os dados órfãos e refaz o seed ao reiniciar. |
+| `permission denied` no Docker | Rode com um usuário no grupo `docker` ou use `sudo`. |
+| Quero ver os logs | `docker compose logs -f backend` |
+
+Mais detalhes sobre a rede permissionada em [docs/besu.md](docs/besu.md).
+
 ## O problema que a tokenização busca resolver
 
 Ativos como usinas, imóveis ou recebíveis são caros, indivisíveis na prática e difíceis de negociar em frações. A tokenização representa participações econômicas como tokens: frações pequenas, histórico auditável de movimentações e regras (como limite de emissão) aplicadas por código. Aqui o foco é técnico: como emitir, transferir e auditar essas participações com segurança.
@@ -71,38 +134,11 @@ Detalhes em [docs/tokenization-flow.md](docs/tokenization-flow.md).
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Recharts, TanStack Query, Vitest |
 | Infra | Docker, Docker Compose |
 
-## Como executar localmente
+## Demonstração, vídeo e screenshots
 
-Requisitos: Docker e Docker Compose v2.
-
-```bash
-cp .env.example .env   # opcional: os padrões já funcionam (defina API_KEY para proteger a API)
-docker compose up --build
-```
-
-| Serviço | URL |
-| --- | --- |
-| Dashboard | http://localhost:5173 |
-| API (Swagger) | http://localhost:8000/docs |
-| JSON-RPC da blockchain | http://localhost:8545 |
-
-Na primeira subida o backend aplica as migrações e roda o seed (2 ativos em rascunho e 3 carteiras de teste). Para subir já com a Usina Solar Alpha tokenizada e uma transferência de exemplo, use `SEED_DEMO=true docker compose up --build`.
-
-> A blockchain de desenvolvimento **não persiste** estado. Se reiniciar só o container `chain`, o backend detecta, limpa os dados órfãos e refaz o seed ao subir. Use `docker compose down -v` para resetar tudo.
-
-### Demonstração passo a passo
-
-```bash
-./scripts/demo.sh
-```
-
-O script percorre o fluxo completo pela API: aprova o ativo, implanta o contrato, emite 10 milhões de tokens, transfere 100 mil da carteira A (tesouraria) para a B, consulta os saldos, o hash e o bloco da transação. Depois abra o dashboard.
-
-O vídeo de demonstração é gerado automaticamente (com a stack no ar): `cd scripts/demo-video && npm i && npx playwright-core install ffmpeg && node record.mjs` (grava a interface com Playwright; `NODE_FAILURE=0` pula a parte de derrubar um validador no Besu). Para gravar manualmente: rode `docker compose up --build`, abra o dashboard, execute `./scripts/demo.sh` em um terminal ao lado e mostre (1) o ativo, (2) o contrato implantado, (3) a transferência entre carteiras e (4) o hash e o bloco em *Transações*.
-
-### Screenshots
-
-Com a stack no ar e `SEED_DEMO=true`, capture o painel (`/`), o detalhe do ativo (`/assets/1`), as carteiras (`/wallets`) e as transações (`/transactions`) e salve em `docs/screenshots/`.
+- `./scripts/demo.sh` percorre o fluxo pela API: aprova o ativo, implanta o contrato, emite 10 milhões de tokens, transfere 100 mil da carteira A (tesouraria) para a B e mostra saldos, hash e bloco.
+- Screenshots em `docs/screenshots/` (painel, ativo, carteiras, transações, rede e fluxo entre nós).
+- Vídeo: com a stack no ar, `cd scripts/demo-video && npm i && npx playwright-core install ffmpeg && node record.mjs` grava a interface com Playwright (`NODE_FAILURE=0` pula a parte de derrubar um validador no Besu).
 
 ## Como executar os testes
 
