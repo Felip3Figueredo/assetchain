@@ -6,6 +6,8 @@ AssetChain demonstra, de ponta a ponta, como um ativo do mundo real (aqui, a *Us
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
+▶ **[Vídeo da demonstração (2min38s)](https://github.com/Felip3Figueredo/assetchain/releases/download/v1.0.0/assetchain-demo.mp4)**: do ambiente zerado até a transferência confirmada, o fluxo entre os nós do Besu e um validador derrubado.
+
 ## Início rápido
 
 **Você precisa de:** Docker com Compose v2 (`docker compose version`), cerca de 4 GB de RAM livres e as portas `5173`, `8000` e `8545` livres. Não precisa instalar Node nem Python.
