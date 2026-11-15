@@ -60,6 +60,10 @@ class Wallet(Base):
     encrypted_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
+    @property
+    def can_sign(self) -> bool:
+        return self.encrypted_key is not None
+
 
 class ChainTransaction(Base):
     __tablename__ = "chain_transactions"
