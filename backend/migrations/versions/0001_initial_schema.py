@@ -29,7 +29,7 @@ def upgrade() -> None:
     sa.Column('category', sa.String(length=80), nullable=False),
     sa.Column('description', sa.String(length=500), nullable=False),
     sa.Column('estimated_value_brl', sa.Numeric(precision=20, scale=2), nullable=False),
-    sa.Column('token_supply', sa.Integer(), nullable=False),
+    sa.Column('token_supply', sa.BigInteger(), nullable=False),
     sa.Column('token_price_brl', sa.Numeric(precision=20, scale=6), nullable=False),
     sa.Column('status', sa.Enum('DRAFT', 'APPROVED', 'TOKENIZED', name='assetstatus'), nullable=False),
     sa.Column('metadata_json', sa.JSON(), nullable=False),

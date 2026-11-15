@@ -141,7 +141,7 @@ def list_wallets(svc: WalletService = Depends(wallet_service)):
 @router.get("/wallets/{address}", tags=["wallets"])
 def get_wallet(address: str, svc: WalletService = Depends(wallet_service), g: TokenGateway = Depends(get_gateway)):
     w = svc.get(_norm_address(address))
-    eth = g.w3.eth.get_balance(w.address)
+    eth = g.client.eth_balance(w.address)
     return {**WalletOut.model_validate(w).model_dump(), "eth_balance": str(Decimal(eth) / 10**18)}
 
 

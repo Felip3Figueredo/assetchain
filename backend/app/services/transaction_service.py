@@ -18,12 +18,22 @@ class TransactionService:
         self.s, self.gateway, self.wallets = session, gateway, wallets
         self.txs, self.assets = TxRepo(session), AssetRepo(session)
 
+    def _check_replay(self, tx: ChainTransaction, asset_id: int, frm: str, to: str, amount: int) -> ChainTransaction:
+        same = (tx.kind == "TRANSFER" and tx.asset_id == asset_id and tx.from_address == frm
+                and tx.to_address == to and tx.amount == amount)
+        if not same:
+            raise AppError(409, "IDEMPOTENCY_KEY_REUSED",
+                           "This Idempotency-Key was already used for a different operation or payload")
+        if tx.status == TxStatus.PENDING and tx.tx_hash is None:
+            raise AppError(409, "TRANSFER_IN_PROGRESS", "A transfer with this key is already being submitted")
+        return tx
+
     def transfer(self, asset_id: int, from_address: str, to_address: str, amount_wei: int,
                  idempotency_key: str | None) -> ChainTransaction:
         if idempotency_key:
             prior = self.txs.by_idem(idempotency_key)
             if prior:
-                return prior
+                return self._check_replay(prior, asset_id, from_address, to_address, amount_wei)
         asset = self.assets.get(asset_id)
         if asset is None:
             raise AppError(404, "ASSET_NOT_FOUND", f"Asset {asset_id} not found")
@@ -40,15 +50,30 @@ class TransactionService:
             raise AppError(422, "INSUFFICIENT_BALANCE",
                            f"Balance {fmt(balance)} {contract.symbol} is lower than requested {fmt(amount_wei)}")
 
-        tx_hash = self.gateway.transfer(contract.address, key, to_address, amount_wei)
+        # Reserve the idempotency key BEFORE broadcasting, so a concurrent duplicate cannot send a second tx.
         tx = self.txs.add(ChainTransaction(
-            tx_hash=tx_hash, asset_id=asset_id, kind="TRANSFER", from_address=from_address,
-            to_address=to_address, amount=amount_wei, status=TxStatus.PENDING, idempotency_key=idempotency_key))
+            tx_hash=None, asset_id=asset_id, kind="TRANSFER", from_address=from_address, to_address=to_address,
+            amount=amount_wei, status=TxStatus.PENDING, idempotency_key=idempotency_key))
         try:
             self.s.commit()
-        except IntegrityError:  # concurrent replay with the same key
+        except IntegrityError as exc:
             self.s.rollback()
-            return self.txs.by_idem(idempotency_key)  # type: ignore[arg-type]
+            raise AppError(409, "TRANSFER_IN_PROGRESS", "A transfer with this key is already being submitted") from exc
+
+        try:
+            tx_hash = self.gateway.transfer(contract.address, key, to_address, amount_wei)
+        except Exception:
+            self.s.delete(tx)  # nothing reached the chain: leave no trace
+            self.s.commit()
+            raise
+        tx.tx_hash = tx_hash
+        try:
+            self.s.commit()
+        except IntegrityError:  # the reconciler already indexed this hash: keep a single record
+            self.s.rollback()
+            self.s.delete(self.s.get(ChainTransaction, tx.id))
+            self.s.commit()
+            return self.txs.by_hash(tx_hash)  # type: ignore[return-value]
         log.info("transfer_submitted", tx=tx_hash, asset_id=asset_id)
 
         try:
@@ -63,5 +88,8 @@ class TransactionService:
             tx.error = "Transaction reverted on-chain"
         self.s.commit()
         log.info("transfer_settled", tx=tx_hash, status=tx.status.value, block=receipt.block_number)
-        Indexer(self.s, self.gateway).sync(asset_id)
+        try:
+            Indexer(self.s, self.gateway).sync(asset_id)
+        except AppError as exc:  # the transfer already succeeded; reconciliation can run later
+            log.warning("post_transfer_sync_failed", error=exc.message)
         return tx

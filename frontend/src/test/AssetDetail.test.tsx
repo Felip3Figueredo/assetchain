@@ -15,3 +15,26 @@ test("approved asset offers the deploy action and explains it is not legal owner
   expect(await screen.findByRole("button", { name: "Implantar contrato e emitir tokens" })).toBeInTheDocument();
   expect(screen.getByText(/não representam propriedade jurídica/)).toBeInTheDocument();
 });
+
+import userEvent from "@testing-library/user-event";
+
+test("retrying a failed deploy reuses the same Idempotency-Key", async () => {
+  const keys: string[] = [];
+  globalThis.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (u.includes("/deploy")) {
+      keys.push((init!.headers as Record<string, string>)["Idempotency-Key"]);
+      return new Response(JSON.stringify({ error: { code: "RPC_UNAVAILABLE", message: "down" } }), { status: 503 });
+    }
+    if (u.startsWith("/api/assets/1/transactions")) return new Response("[]");
+    if (u.startsWith("/api/assets/1")) return new Response(JSON.stringify(asset));
+    return new Response("[]");
+  }) as unknown as typeof fetch;
+  renderPage(<Routes><Route path="/assets/:id" element={<AssetDetail />} /></Routes>, "/assets/1");
+  const btn = await screen.findByRole("button", { name: "Implantar contrato e emitir tokens" });
+  await userEvent.click(btn);
+  await screen.findByText("down");
+  await userEvent.click(await screen.findByRole("button", { name: "Implantar contrato e emitir tokens" }));
+  await vi.waitFor(() => expect(keys.length).toBe(2));
+  expect(keys[0]).toBe(keys[1]);
+});

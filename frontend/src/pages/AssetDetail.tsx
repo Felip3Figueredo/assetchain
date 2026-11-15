@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useParams } from "react-router-dom";
-import { api } from "../api";
+import { api, newIdempotencyKey } from "../api";
 import { formatBrl, formatTokens } from "../format";
 import { Card, Empty, ErrorNote, Hash, PageHeader, StatusBadge } from "../ui";
 import { TxTable } from "./Transactions";
@@ -14,24 +14,28 @@ function TransferForm({ assetId }: { assetId: number }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("100000");
+  // One key per distinct transfer: retries after a timeout reuse it, editing the form or succeeding rotates it.
+  const key = useRef(newIdempotencyKey());
+  const rotate = () => { key.current = newIdempotencyKey(); };
   const m = useMutation({
-    mutationFn: () => api.transfer({ asset_id: assetId, from_address: from, to_address: to, amount }),
-    onSuccess: () => qc.invalidateQueries(),
+    mutationFn: () => api.transfer({ asset_id: assetId, from_address: from, to_address: to, amount }, key.current),
+    onSuccess: () => { rotate(); qc.invalidateQueries(); },
   });
   const list = wallets.data ?? [];
   const opts = list.map((w) => <option key={w.address} value={w.address}>{w.label} — {w.address.slice(0, 8)}…</option>);
   return (
     <form className="grid gap-3 p-4 sm:grid-cols-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
       <label className="text-sm"><span className="text-muted">De</span>
-        <select className="input mt-1" required value={from} onChange={(e) => setFrom(e.target.value)}><option value="">Selecione</option>{opts}</select></label>
+        <select className="input mt-1" required value={from} onChange={(e) => { rotate(); setFrom(e.target.value); }}><option value="">Selecione</option>{opts}</select></label>
       <label className="text-sm"><span className="text-muted">Para</span>
-        <select className="input mt-1" required value={to} onChange={(e) => setTo(e.target.value)}><option value="">Selecione</option>{opts}</select></label>
+        <select className="input mt-1" required value={to} onChange={(e) => { rotate(); setTo(e.target.value); }}><option value="">Selecione</option>{opts}</select></label>
       <label className="text-sm"><span className="text-muted">Quantidade</span>
-        <input className="input mt-1" required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
+        <input className="input mt-1" required inputMode="decimal" value={amount} onChange={(e) => { rotate(); setAmount(e.target.value); }} /></label>
       <div className="flex items-end"><button className="btn-primary w-full" disabled={m.isPending}>{m.isPending ? "Aguardando bloco…" : "Transferir tokens"}</button></div>
       <div className="sm:col-span-4">
         <ErrorNote error={m.error} />
-        {m.data && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-ok">Transferência {m.data.status === "CONFIRMED" ? "confirmada" : "enviada"} no bloco {m.data.block_number ?? "—"}. Hash: <Hash value={m.data.tx_hash} /></p>}
+        {m.data && m.data.status === "FAILED" && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-bad">A transação foi revertida na blockchain. Hash: <Hash value={m.data.tx_hash} /></p>}
+        {m.data && m.data.status !== "FAILED" && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-ok">Transferência {m.data.status === "CONFIRMED" ? "confirmada" : "enviada (aguardando bloco)"}{m.data.block_number != null ? ` no bloco ${m.data.block_number}` : ""}. Hash: <Hash value={m.data.tx_hash} /></p>}
       </div>
     </form>
   );
@@ -87,7 +91,11 @@ export default function AssetDetail() {
   const asset = useQuery({ queryKey: ["asset", id], queryFn: () => api.asset(id) });
   const txs = useQuery({ queryKey: ["asset-txs", id], queryFn: () => api.assetTxs(id) });
   const approve = useMutation({ mutationFn: () => api.approve(id), onSuccess: () => qc.invalidateQueries() });
-  const deploy = useMutation({ mutationFn: () => api.deploy(id), onSuccess: () => qc.invalidateQueries() });
+  const deployKey = useRef(newIdempotencyKey());
+  const deploy = useMutation({
+    mutationFn: () => api.deploy(id, deployKey.current),
+    onSuccess: () => { deployKey.current = newIdempotencyKey(); qc.invalidateQueries(); },
+  });
   const a = asset.data;
   if (asset.error) return <ErrorNote error={asset.error} />;
   if (!a) return <Empty>Carregando…</Empty>;

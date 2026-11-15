@@ -106,6 +106,10 @@ class ChainClient:
         )
 
     @rpc_guard
+    def eth_balance(self, address: str) -> int:
+        return self.w3.eth.get_balance(address)
+
+    @rpc_guard
     def latest_block(self) -> BlockInfo:
         b = self.w3.eth.get_block("latest")
         return BlockInfo(

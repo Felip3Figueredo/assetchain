@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, DateTime, Enum, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -32,7 +32,7 @@ class Asset(Base):
     category: Mapped[str] = mapped_column(String(80))
     description: Mapped[str] = mapped_column(String(500), default="")
     estimated_value_brl: Mapped[float] = mapped_column(Numeric(20, 2))
-    token_supply: Mapped[int] = mapped_column(Integer)  # whole tokens
+    token_supply: Mapped[int] = mapped_column(BigInteger)  # whole tokens
     token_price_brl: Mapped[float] = mapped_column(Numeric(20, 6))
     status: Mapped[AssetStatus] = mapped_column(Enum(AssetStatus), default=AssetStatus.DRAFT)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)

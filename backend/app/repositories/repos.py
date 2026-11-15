@@ -77,6 +77,11 @@ class TxRepo:
     def pending(self) -> list[ChainTransaction]:
         return list(self.s.scalars(select(ChainTransaction).where(ChainTransaction.status == "PENDING")))
 
+    def pending_deploy(self, asset_id: int) -> ChainTransaction | None:
+        return self.s.scalar(select(ChainTransaction).where(
+            ChainTransaction.asset_id == asset_id, ChainTransaction.kind == "DEPLOY",
+            ChainTransaction.status == "PENDING"))
+
     def add(self, t: ChainTransaction) -> ChainTransaction:
         self.s.add(t)
         self.s.flush()

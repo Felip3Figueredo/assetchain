@@ -1,5 +1,6 @@
 import re
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.blockchain.token import TokenGateway
@@ -38,13 +39,35 @@ class TokenizationService:
             raise AppError(404, "NOT_TOKENIZED", f"Asset {asset_id} has no token contract")
         return c
 
+    def _reserve_deploy(self, asset: Asset, idem: str | None, prior: ChainTransaction | None) -> ChainTransaction:
+        """Record intent BEFORE touching the chain so retries/concurrent calls cannot deploy twice."""
+        if prior is not None:
+            if prior.status == TxStatus.PENDING:
+                raise AppError(409, "DEPLOY_IN_PROGRESS", "A deployment for this asset is already in progress")
+            res = prior  # FAILED earlier: reuse the row so the same key can be retried
+            res.status = TxStatus.PENDING
+        else:
+            if self.txs.pending_deploy(asset.id):
+                raise AppError(409, "DEPLOY_IN_PROGRESS", "A deployment for this asset is already in progress")
+            res = self.txs.add(ChainTransaction(
+                asset_id=asset.id, kind="DEPLOY", from_address=self.gateway.deployer_address,
+                to_address="", amount=0, status=TxStatus.PENDING, idempotency_key=idem))
+        try:
+            self.s.commit()
+        except IntegrityError as exc:
+            self.s.rollback()
+            raise AppError(409, "DEPLOY_IN_PROGRESS", "A deployment with this key is already in progress") from exc
+        return res
+
     def deploy(self, asset_id: int, idempotency_key: str | None) -> TokenContract:
         asset = self._asset(asset_id)
+        prior = self.txs.by_idem(idempotency_key) if idempotency_key else None
+        if prior is not None and (prior.kind != "DEPLOY" or prior.asset_id != asset_id):
+            raise AppError(409, "IDEMPOTENCY_KEY_REUSED", "This Idempotency-Key was used for a different operation")
         contract = self.assets.contract_of(asset_id)
 
         if asset.status == AssetStatus.TOKENIZED and contract:
-            prior = self.txs.by_idem(idempotency_key) if idempotency_key else None
-            if prior and prior.asset_id == asset_id:
+            if prior is not None and prior.status == TxStatus.CONFIRMED:
                 return contract  # idempotent replay
             raise AppError(409, "ALREADY_TOKENIZED", "Asset is already tokenized")
         if asset.status == AssetStatus.DRAFT:
@@ -52,17 +75,20 @@ class TokenizationService:
 
         treasury = self.wallets.ensure_treasury()
         if contract is None:
+            res = self._reserve_deploy(asset, idempotency_key, prior)
             cap = asset.token_supply * WEI
-            res = self.gateway.deploy(asset.name, symbol_for(asset), asset.asset_code, cap)
-            contract = TokenContract(asset_id=asset.id, address=res.address, deploy_tx_hash=res.tx_hash,
-                                     deployed_block=res.block, cap=cap, symbol=symbol_for(asset))
+            try:
+                dep = self.gateway.deploy(asset.name, symbol_for(asset), asset.asset_code, cap)
+            except Exception:
+                res.status = TxStatus.FAILED
+                self.s.commit()
+                raise
+            contract = TokenContract(asset_id=asset.id, address=dep.address, deploy_tx_hash=dep.tx_hash,
+                                     deployed_block=dep.block, cap=cap, symbol=symbol_for(asset))
             self.s.add(contract)
-            self.txs.add(ChainTransaction(
-                tx_hash=res.tx_hash, asset_id=asset.id, kind="DEPLOY", from_address=self.gateway.deployer_address,
-                to_address=res.address, amount=0, status=TxStatus.CONFIRMED, block_number=res.block,
-                idempotency_key=idempotency_key))
+            res.tx_hash, res.to_address, res.block_number, res.status = dep.tx_hash, dep.address, dep.block, TxStatus.CONFIRMED
             self.s.commit()
-            log.info("contract_deployed", asset=asset.asset_code, address=res.address, block=res.block)
+            log.info("contract_deployed", asset=asset.asset_code, address=dep.address, block=dep.block)
 
         # Resume-safe mint: only mint when nothing has been issued yet.
         if self.gateway.total_supply(contract.address) == 0:

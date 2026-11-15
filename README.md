@@ -164,7 +164,7 @@ Referência completa em [docs/api.md](docs/api.md).
 ## Segurança e limites do ambiente experimental
 
 - Apenas contas e chaves **de teste** (as contas públicas do Hardhat). Não use fundos ou carteiras reais.
-- Chaves privadas das carteiras criadas pela plataforma ficam **criptografadas (Fernet)** no banco; a chave mestra vem do ambiente. Em produção isso seria um KMS/HSM.
+- Chaves privadas das carteiras criadas pela plataforma ficam **criptografadas (Fernet)** no banco; a chave mestra vem do ambiente. **A `FERNET_KEY` de exemplo do `.env.example`/compose é pública**: gere a sua para qualquer uso além da demonstração local. Em produção isso seria um KMS/HSM.
 - A tesouraria usa a chave pública nº 0 do Hardhat, conhecida por qualquer pessoa: **a rede é descartável**.
 - A API não tem autenticação nem autorização por usuário. Foi omitida de propósito por escopo; seria o primeiro item de uma versão real.
 - Validação de entrada (endereços, quantidades), tratamento de erros RPC (503/409), emissão limitada pelo `cap` do contrato e **idempotência** (`Idempotency-Key`) em deploy e transferência.

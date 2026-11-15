@@ -14,7 +14,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const idem = () => `ui-${crypto.randomUUID()}`;
+export const newIdempotencyKey = () => `ui-${crypto.randomUUID()}`;
 
 export const api = {
   stats: () => request<Stats>("/api/dashboard/stats"),
@@ -22,8 +22,8 @@ export const api = {
   asset: (id: number) => request<Asset>(`/api/assets/${id}`),
   createAsset: (body: unknown) => request<Asset>("/api/assets", { method: "POST", body: JSON.stringify(body) }),
   approve: (id: number) => request<Asset>(`/api/assets/${id}/approve`, { method: "POST" }),
-  deploy: (id: number) =>
-    request<TokenInfo>(`/api/tokenization/${id}/deploy`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idem() } }),
+  deploy: (id: number, key: string) =>
+    request<TokenInfo>(`/api/tokenization/${id}/deploy`, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": key } }),
   tokenInfo: (id: number) => request<TokenInfo>(`/api/tokenization/${id}`),
   supply: (id: number) => request<Supply>(`/api/tokenization/${id}/supply`),
   holders: (id: number) => request<Holder[]>(`/api/tokenization/${id}/holders`),
@@ -33,9 +33,9 @@ export const api = {
   balances: (address: string) => request<Balance[]>(`/api/wallets/${address}/balances`),
   walletTxs: (address: string) => request<Tx[]>(`/api/wallets/${address}/transactions`),
   txs: () => request<Tx[]>("/api/transactions?limit=500"),
-  transfer: (body: { asset_id: number; from_address: string; to_address: string; amount: string }) =>
+  transfer: (body: { asset_id: number; from_address: string; to_address: string; amount: string }, key: string) =>
     request<Tx>("/api/transactions/transfer", {
-      method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": idem() }, body: JSON.stringify(body),
+      method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(body),
     }),
   latestBlock: () => request<Block>("/api/blockchain/blocks/latest"),
 };
