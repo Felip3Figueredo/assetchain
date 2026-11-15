@@ -24,3 +24,9 @@ export interface Supply { total_supply: string; cap: string; symbol: string; con
 export interface Block { number: number; hash: string; parent_hash: string; timestamp: number; tx_count: number; gas_used: number }
 export interface Consensus { consensus: "QBFT" | "automine"; validators: string[]; count: number; fault_tolerance: number; quorum: number; peer_count: number }
 export interface ChainBlock { number: number; hash: string; timestamp: number; tx_count: number; gas_used: number; proposer: string }
+export interface NodeView { name: string; address: string; is_entry: boolean; reachable: boolean; has_tx: boolean; block_number: number | null; block_hash: string | null; latency_ms: number | null; in_block: boolean }
+export interface Propagation {
+  tx_hash: string; status: "PENDING" | "CONFIRMED" | "FAILED"; from_address?: string; to_address?: string | null;
+  block_number: number | null; block_hash: string | null; block_timestamp?: number; proposer: string | null;
+  nodes: NodeView[]; in_sync: boolean;
+}

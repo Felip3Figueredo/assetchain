@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, newIdempotencyKey } from "../api";
 import { formatBrl, formatTokens } from "../format";
 import { Card, Empty, ErrorNote, Hash, PageHeader, StatusBadge } from "../ui";
@@ -35,7 +35,7 @@ function TransferForm({ assetId }: { assetId: number }) {
       <div className="sm:col-span-4">
         <ErrorNote error={m.error} />
         {m.data && m.data.status === "FAILED" && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-bad">A transação foi revertida na blockchain. Hash: <Hash value={m.data.tx_hash} /></p>}
-        {m.data && m.data.status !== "FAILED" && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-ok">Transferência {m.data.status === "CONFIRMED" ? "confirmada" : "enviada (aguardando bloco)"}{m.data.block_number != null ? ` no bloco ${m.data.block_number}` : ""}. Hash: <Hash value={m.data.tx_hash} /></p>}
+        {m.data && m.data.status !== "FAILED" && <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-ok">Transferência {m.data.status === "CONFIRMED" ? "confirmada" : "enviada (aguardando bloco)"}{m.data.block_number != null ? ` no bloco ${m.data.block_number}` : ""}. Hash: <Hash value={m.data.tx_hash} /> · <Link className="underline" to={`/transactions/${m.data.tx_hash}`}>Ver fluxo entre os nós</Link></p>}
       </div>
     </form>
   );

@@ -7,6 +7,7 @@ import AssetDetail from "./pages/AssetDetail";
 import Wallets from "./pages/Wallets";
 import Transactions from "./pages/Transactions";
 import Network from "./pages/Network";
+import TxFlow from "./pages/TxFlow";
 
 const NAV = [
   { to: "/", label: "Painel", end: true },
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/assets/:id" element={<AssetDetail />} />
           <Route path="/wallets" element={<Wallets />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/transactions/:hash" element={<TxFlow />} />
           <Route path="/network" element={<Network />} />
         </Routes>
       </main>

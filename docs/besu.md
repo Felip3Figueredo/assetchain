@@ -41,6 +41,18 @@ docker start assetchain-besu-3-1 assetchain-besu-4-1
 
 Com um validador fora, a tela mostra "Sem propor nos últimos blocos" para ele (após cerca de 40 s, quando a janela de 20 blocos já passou por todo o rodízio) e o aviso de pares desconectados. Em rede Hardhat a página explica que é um nó único.
 
+## Ver o fluxo de uma transação entre os nós
+
+Em **Transações**, clique no hash (ou em "Ver fluxo entre os nós" depois de transferir). A tela `/transactions/{hash}` mostra:
+
+1. qual nó recebeu a transação da API (o nó de entrada, `besu-1`);
+2. qual validador **propôs** o bloco que a contém;
+3. o estado em **cada um dos 4 nós**, consultado agora pelo JSON-RPC de cada um: tem o recibo? o hash do bloco é o mesmo?
+
+Os passos marcados "Lido nos nós" são medidos; os marcados "Como funciona" (propagação P2P e votos PREPARE/COMMIT) são explicação, porque a rede não expõe a hora de cada repasse nem os votos individuais. Para ver a diferença entre nós: derrube o `assetchain-besu-4-1`, faça uma transferência e abra o fluxo (mostra "3 de 4 nós" e o nó 4 "Sem resposta"). Ao religar, o nó se sincroniza sozinho em cerca de 45 s e a tela volta a "4 de 4".
+
+A API sabe quais nós consultar pela variável `NODE_RPC_URLS` (`Nome|endereço do validador|url;...`, já configurada em `docker-compose.besu.yml`). Sem ela, consulta só o nó do `RPC_URL`.
+
 ## O que muda em relação ao Hardhat
 
 | Configuração | Hardhat (Fase 1) | Besu (Fase 2) |

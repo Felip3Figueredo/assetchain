@@ -204,7 +204,7 @@ make up-besu       # sobe PostgreSQL + 4 nós Besu + backend + frontend
 make test-besu     # a suíte do backend contra o Besu
 ```
 
-A aba **Rede** do dashboard mostra os validadores, o quórum e quem propôs cada bloco; dá para derrubar um validador e ver a rede continuar. Detalhes em [docs/besu.md](docs/besu.md).
+A aba **Rede** do dashboard mostra os validadores, o quórum e quem propôs cada bloco; clicando no hash de uma transação você vê o **fluxo entre os nós** (quem recebeu, quem propôs o bloco e se cada nó tem o mesmo bloco). Dá para derrubar um validador e ver a rede continuar. Detalhes em [docs/besu.md](docs/besu.md).
 
 ## Roteiro
 

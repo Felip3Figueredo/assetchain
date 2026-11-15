@@ -15,6 +15,7 @@ services:
       CHAIN_ID: "1337"
       POA_CHAIN: "true"
       GAS_PRICE_MODE: zero
+      NODE_RPC_URLS: "Validador 1|0x7768263AF18e6D362C51B4ac0bbeAcb31a5b115d|http://172.30.0.11:8545;Validador 2|0xD1B9e25D763e6271a919F8C94bD4d37dD6f22D8d|http://172.30.0.12:8545;Validador 3|0xD4098419a8Dd3B055d2C186F40877D02D850d24b|http://172.30.0.13:8545;Validador 4|0xD53bc71ac7BaDd02C4dC71348ecf0134accd3066|http://172.30.0.14:8545"
   besu-1:
     image: hyperledger/besu:latest
     command:

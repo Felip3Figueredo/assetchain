@@ -6,6 +6,7 @@ from web3 import Web3
 
 from app.api.deps import (asset_service, get_db, get_gateway, indexer, tokenization_service,
                           transaction_service, wallet_service)
+from app.blockchain.propagation import trace
 from app.blockchain.token import TokenGateway
 from app.core.errors import AppError
 from app.domain.units import fmt, to_wei
@@ -219,6 +220,11 @@ def recent_blocks(limit: int = Query(10, ge=1, le=100), g: TokenGateway = Depend
 @router.get("/blockchain/validators", tags=["blockchain"])
 def validators(g: TokenGateway = Depends(get_gateway)):
     return g.client.consensus_info()
+
+
+@router.get("/blockchain/transactions/{tx_hash}/propagation", tags=["blockchain"])
+def tx_propagation(tx_hash: str, g: TokenGateway = Depends(get_gateway)):
+    return trace(g.client.settings, g.client, tx_hash)
 
 
 @router.get("/blockchain/transactions/{tx_hash}", tags=["blockchain"])

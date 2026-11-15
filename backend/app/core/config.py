@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     api_key: str = ""  # when set, every /api route except /api/health requires header X-API-Key
     auto_reset_on_chain_mismatch: bool = False  # dev only: wipe app data if the chain was reset
     artifact_path: str = "../blockchain/artifacts-export/AssetToken.json"
+    node_rpc_urls: str = ""  # "Name|0xValidator|http://host:8545;..." — lets the API inspect every node
     poa_chain: bool = False  # True for QBFT/IBFT/Clique chains (Besu): long extraData in block headers
     gas_price_mode: str = "auto"  # "auto" | "zero" (permissioned chains with free gas)
     receipt_timeout_s: int = 60

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { api } from "../api";
 import { formatDate, formatTokens } from "../format";
 import { Card, Empty, ErrorNote, Hash, PageHeader, StatusBadge } from "../ui";
@@ -15,7 +16,7 @@ export function TxTable({ txs }: { txs: Tx[] }) {
         <tbody>
           {txs.map((t) => (
             <tr key={t.id} className="border-b border-paper-line last:border-0">
-              <td className="td"><Hash value={t.tx_hash} /></td>
+              <td className="td">{t.tx_hash ? <Link to={`/transactions/${t.tx_hash}`} className="underline-offset-2 hover:underline" title="Ver fluxo entre os nós"><Hash value={t.tx_hash} /></Link> : <Hash value={t.tx_hash} />}</td>
               <td className="td">{t.kind === "MINT" ? "Emissão" : t.kind === "DEPLOY" ? "Implantação" : "Transferência"}</td>
               <td className="td"><Hash value={t.from_address} /></td>
               <td className="td"><Hash value={t.to_address} /></td>

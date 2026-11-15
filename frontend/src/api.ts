@@ -1,4 +1,4 @@
-import type { Asset, Balance, Block, ChainBlock, Consensus, Holder, Stats, Supply, TokenInfo, Tx, Wallet } from "./types";
+import type { Propagation, Asset, Balance, Block, ChainBlock, Consensus, Holder, Stats, Supply, TokenInfo, Tx, Wallet } from "./types";
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
@@ -37,6 +37,7 @@ export const api = {
     request<Tx>("/api/transactions/transfer", {
       method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(body),
     }),
+  propagation: (hash: string) => request<Propagation>(`/api/blockchain/transactions/${hash}/propagation`),
   validators: () => request<Consensus>("/api/blockchain/validators"),
   blocks: (limit = 20) => request<ChainBlock[]>(`/api/blockchain/blocks?limit=${limit}`),
   latestBlock: () => request<Block>("/api/blockchain/blocks/latest"),
