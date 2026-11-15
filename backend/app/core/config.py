@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     deployer_private_key: str = HARDHAT_ACCOUNT_0
     fernet_key: str = ""
     artifact_path: str = "../blockchain/artifacts-export/AssetToken.json"
+    poa_chain: bool = False  # True for QBFT/IBFT/Clique chains (Besu): long extraData in block headers
     gas_price_mode: str = "auto"  # "auto" | "zero" (permissioned chains with free gas)
     receipt_timeout_s: int = 60
     log_level: str = "INFO"

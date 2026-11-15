@@ -11,6 +11,8 @@ from web3 import Web3
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "blockchain" / "artifacts-export" / "AssetToken.json"
 PORT = int(os.environ.get("TEST_CHAIN_PORT", "8546"))
+EXTERNAL_RPC = os.environ.get("TEST_RPC_URL")  # e.g. Besu: make test-besu
+CHAIN_ID = int(os.environ.get("TEST_CHAIN_ID", "31337"))
 
 # Hardhat default test accounts (public, worthless)
 KEYS = [
@@ -29,6 +31,9 @@ def _port_open(port: int) -> bool:
 @pytest.fixture(scope="session")
 def chain_url():
     """Local Hardhat EVM node (real JSON-RPC) shared by the whole test session."""
+    if EXTERNAL_RPC:
+        yield EXTERNAL_RPC
+        return
     url = f"http://127.0.0.1:{PORT}"
     proc = None
     if not _port_open(PORT):
@@ -55,7 +60,8 @@ def settings(chain_url, monkeypatch):
     from app.core.config import Settings
 
     return Settings(
-        _env_file=None, rpc_url=chain_url, chain_id=31337, database_url="sqlite://",
+        _env_file=None, rpc_url=chain_url, chain_id=CHAIN_ID,
+        poa_chain=bool(EXTERNAL_RPC), gas_price_mode="zero" if EXTERNAL_RPC else "auto", database_url="sqlite://",
         deployer_private_key=KEYS[0], artifact_path=str(ARTIFACT),
         fernet_key="", receipt_timeout_s=20,
     )

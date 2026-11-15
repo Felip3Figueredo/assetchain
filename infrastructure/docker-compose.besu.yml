@@ -1,0 +1,123 @@
+# Phase 2 — permissioned Hyperledger Besu (QBFT, 4 validators, node permissioning).
+# Usage (from the repo root):
+#   docker compose -f docker-compose.yml -f infrastructure/docker-compose.besu.yml up --build
+# The Hardhat node is disabled; besu-1 answers to the same hostname ("chain"), so the backend
+# only needs different settings (chain id, PoA extraData middleware, zero gas price).
+name: assetchain
+services:
+  chain:
+    profiles: ["hardhat-only"]
+  backend:
+    depends_on: !override
+      postgres: { condition: service_healthy }
+      besu-1: { condition: service_healthy }
+    environment:
+      CHAIN_ID: "1337"
+      POA_CHAIN: "true"
+      GAS_PRICE_MODE: zero
+  besu-1:
+    image: hyperledger/besu:latest
+    command:
+      - --data-path=/opt/besu/data
+      - --genesis-file=/config/genesis.json
+      - --node-private-key-file=/config/node/key
+      - --min-gas-price=0
+      - --p2p-host=172.30.0.11
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-api=ETH,NET,WEB3,QBFT,ADMIN
+      - --rpc-http-cors-origins=*
+      - --host-allowlist=*
+      - --permissions-nodes-config-file-enabled
+      - --permissions-nodes-config-file=/config/permissions_config.toml
+    volumes:
+      - ./infrastructure/besu/genesis.json:/config/genesis.json:ro
+      - ./infrastructure/besu/permissions_config.toml:/config/permissions_config.toml:ro
+      - ./infrastructure/besu/node1:/config/node:ro
+    ports: ["8545:8545"]
+    networks:
+      default:
+        ipv4_address: 172.30.0.11
+        aliases: [chain]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8545"]
+      interval: 5s
+      retries: 30
+
+  besu-2:
+    image: hyperledger/besu:latest
+    command:
+      - --data-path=/opt/besu/data
+      - --genesis-file=/config/genesis.json
+      - --node-private-key-file=/config/node/key
+      - --min-gas-price=0
+      - --p2p-host=172.30.0.12
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-api=ETH,NET,WEB3,QBFT,ADMIN
+      - --rpc-http-cors-origins=*
+      - --host-allowlist=*
+      - --permissions-nodes-config-file-enabled
+      - --permissions-nodes-config-file=/config/permissions_config.toml
+      - --bootnodes=enode://89081cc3c96fbd100589171f29d5d6096977294410087f450bbce6cd39ae51a26ccdace9a615c8130a4e7c252d82f85d72da02cf677ad194bb1cfa36b5af3722@172.30.0.11:30303
+    volumes:
+      - ./infrastructure/besu/genesis.json:/config/genesis.json:ro
+      - ./infrastructure/besu/permissions_config.toml:/config/permissions_config.toml:ro
+      - ./infrastructure/besu/node2:/config/node:ro
+    networks:
+      default:
+        ipv4_address: 172.30.0.12
+
+  besu-3:
+    image: hyperledger/besu:latest
+    command:
+      - --data-path=/opt/besu/data
+      - --genesis-file=/config/genesis.json
+      - --node-private-key-file=/config/node/key
+      - --min-gas-price=0
+      - --p2p-host=172.30.0.13
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-api=ETH,NET,WEB3,QBFT,ADMIN
+      - --rpc-http-cors-origins=*
+      - --host-allowlist=*
+      - --permissions-nodes-config-file-enabled
+      - --permissions-nodes-config-file=/config/permissions_config.toml
+      - --bootnodes=enode://89081cc3c96fbd100589171f29d5d6096977294410087f450bbce6cd39ae51a26ccdace9a615c8130a4e7c252d82f85d72da02cf677ad194bb1cfa36b5af3722@172.30.0.11:30303
+    volumes:
+      - ./infrastructure/besu/genesis.json:/config/genesis.json:ro
+      - ./infrastructure/besu/permissions_config.toml:/config/permissions_config.toml:ro
+      - ./infrastructure/besu/node3:/config/node:ro
+    networks:
+      default:
+        ipv4_address: 172.30.0.13
+
+  besu-4:
+    image: hyperledger/besu:latest
+    command:
+      - --data-path=/opt/besu/data
+      - --genesis-file=/config/genesis.json
+      - --node-private-key-file=/config/node/key
+      - --min-gas-price=0
+      - --p2p-host=172.30.0.14
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-api=ETH,NET,WEB3,QBFT,ADMIN
+      - --rpc-http-cors-origins=*
+      - --host-allowlist=*
+      - --permissions-nodes-config-file-enabled
+      - --permissions-nodes-config-file=/config/permissions_config.toml
+      - --bootnodes=enode://89081cc3c96fbd100589171f29d5d6096977294410087f450bbce6cd39ae51a26ccdace9a615c8130a4e7c252d82f85d72da02cf677ad194bb1cfa36b5af3722@172.30.0.11:30303
+    volumes:
+      - ./infrastructure/besu/genesis.json:/config/genesis.json:ro
+      - ./infrastructure/besu/permissions_config.toml:/config/permissions_config.toml:ro
+      - ./infrastructure/besu/node4:/config/node:ro
+    networks:
+      default:
+        ipv4_address: 172.30.0.14
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

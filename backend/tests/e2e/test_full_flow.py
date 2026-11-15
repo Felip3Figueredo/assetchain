@@ -22,7 +22,7 @@ def api(settings):
 def test_usina_solar_alpha_end_to_end(api):
     # 1-3: chain is up and the backend is connected to it
     status = api.get("/api/blockchain/status").json()
-    assert status["connected"] and status["chain_id"] == 31337
+    assert status["connected"] and status["chain_id"] == api.app.state.settings.chain_id
     # 4-5: seeded asset -> approve
     asset = next(a for a in api.get("/api/assets").json() if a["asset_code"] == "ASSET-001")
     assert asset["status"] == "DRAFT" and asset["token_supply"] == 10_000_000

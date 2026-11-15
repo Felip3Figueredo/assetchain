@@ -22,7 +22,7 @@ def _addr(i: int) -> str:
 def test_client_reports_network_and_latest_block(settings):
     client = ChainClient(settings)
     assert client.is_connected()
-    assert client.network_info().chain_id == 31337
+    assert client.network_info().chain_id == settings.chain_id
     assert client.latest_block().number >= 0
 
 

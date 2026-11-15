@@ -6,6 +6,7 @@ from typing import Callable, TypeVar
 
 import requests
 from web3 import Web3
+from web3.middleware import ExtraDataToPOAMiddleware
 from web3.exceptions import ContractLogicError, TimeExhausted, Web3Exception
 
 from app.core.config import Settings
@@ -89,6 +90,8 @@ class ChainClient:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.w3 = Web3(Web3.HTTPProvider(settings.rpc_url, request_kwargs={"timeout": 10}))
+        if settings.poa_chain:
+            self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
     def is_connected(self) -> bool:
         try:

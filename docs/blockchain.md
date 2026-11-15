@@ -25,4 +25,4 @@
 
 ## Rede pública × permissionada
 
-A aplicação roda sobre Hardhat (efêmera, nó único). A Fase 2 leva a mesma aplicação para Hyperledger Besu, uma rede permissionada com consenso QBFT, mudando apenas a configuração de rede.
+A aplicação roda sobre Hardhat (efêmera, nó único). A Fase 2 leva a mesma aplicação para Hyperledger Besu, uma rede permissionada com consenso QBFT, mudando apenas a configuração de rede. Veja [besu.md](besu.md).

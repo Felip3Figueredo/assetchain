@@ -110,7 +110,7 @@ Com a stack no ar e `SEED_DEMO=true`, capture o painel (`/`), o detalhe do ativo
 # Contratos (Hardhat)
 cd blockchain && npm ci && npx hardhat test
 
-# Backend (sobe um nó Hardhat local automaticamente)
+# Backend (sobe um nó Hardhat local automaticamente; `make test-besu` roda contra o Besu)
 cd backend && python -m venv .venv && .venv/bin/pip install -r requirements.txt
 cd ../blockchain && npx hardhat compile && npx ts-node scripts/export-artifact.ts && cd ../backend
 .venv/bin/pytest
@@ -189,12 +189,24 @@ Mais em [docs/blockchain.md](docs/blockchain.md).
 | **Smart contract** | Programa implantado na blockchain, com endereço e estado próprios, executado por todos os nós. Aqui, escrito em Solidity. |
 | **Token ERC-20** | Padrão de contrato para tokens fungíveis (saldo, `transfer`, `approve`, eventos `Transfer`). Cada ativo daqui tem seu ERC-20. |
 | **Blockchain pública** | Qualquer pessoa participa e valida (Ethereum mainnet). Aberta e resistente à censura, porém pública e com taxas reais. |
-| **Blockchain permissionada** | Só participantes autorizados operam nós ou transacionam (ex.: Hyperledger Besu em modo privado). Comum em uso corporativo; é a evolução planejada deste projeto. |
+| **Blockchain permissionada** | Só participantes autorizados operam nós ou transacionam (ex.: Hyperledger Besu em modo privado). Comum em uso corporativo; é a Fase 2 deste projeto (veja abaixo). |
+
+## Fase 2 — Hyperledger Besu
+
+A mesma aplicação roda sobre uma rede **permissionada** com 4 validadores QBFT e nós autorizados por allowlist, apenas trocando a configuração de rede:
+
+```bash
+make up-besu       # sobe PostgreSQL + 4 nós Besu + backend + frontend
+./scripts/demo.sh  # o mesmo cenário, agora em chain 1337
+make test-besu     # a suíte do backend contra o Besu
+```
+
+Detalhes e diferenças em [docs/besu.md](docs/besu.md).
 
 ## Roteiro
 
-- **Fase 1 (esta):** stack completa com Hardhat local.
-- **Fase 2:** rodar a mesma aplicação sobre uma rede permissionada Hyperledger Besu.
+- **Fase 1:** stack completa com Hardhat local.
+- **Fase 2:** rede permissionada Hyperledger Besu (QBFT, 4 validadores).
 
 ## Licença
 
