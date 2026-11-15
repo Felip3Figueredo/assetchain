@@ -42,6 +42,18 @@ def main() -> None:
     command.upgrade(Config("alembic.ini"), "head")
     log.info("migrations_applied")
 
+    from sqlalchemy.orm import sessionmaker
+
+    from app.blockchain.token import TokenGateway
+    from app.services.health import stale_contracts
+
+    with sessionmaker(bind=engine)() as session:
+        stale = stale_contracts(session, TokenGateway(ChainClient(settings)))
+    if stale:
+        log.warning("chain_database_mismatch", assets=stale,
+                    hint="The dev chain was reset but PostgreSQL still references old contracts. "
+                         "Run `docker compose down -v` to reset both.")
+
 
 if __name__ == "__main__":
     main()

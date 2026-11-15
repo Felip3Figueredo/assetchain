@@ -49,7 +49,7 @@ function TokenSection({ id }: { id: number }) {
           <div className="h-56 p-3">
             {h.length === 0 ? <Empty>Sem detentores.</Empty> : (
               <ResponsiveContainer width="100%" height="100%"><PieChart>
-                <Pie data={h.map((x) => ({ name: x.label ?? x.address.slice(0, 8), value: Number(x.balance) }))} dataKey="value" innerRadius={45} outerRadius={80}>
+                <Pie isAnimationActive={false} data={h.map((x) => ({ name: x.label ?? x.address.slice(0, 8), value: Number(x.balance) }))} dataKey="value" innerRadius={45} outerRadius={80}>
                   {h.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                 </Pie><Tooltip formatter={(v: number) => formatTokens(v)} /></PieChart></ResponsiveContainer>)}
           </div>

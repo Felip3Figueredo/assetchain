@@ -1,0 +1,45 @@
+name: assetchain
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-assetchain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-assetchain}
+      POSTGRES_DB: ${POSTGRES_DB:-assetchain}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-assetchain}"]
+      interval: 5s
+      retries: 20
+
+  chain:
+    build: { context: ../blockchain }
+    ports: ["8545:8545"]
+
+  backend:
+    build: { context: .., dockerfile: backend/Dockerfile }
+    depends_on:
+      postgres: { condition: service_healthy }
+      chain: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-assetchain}:${POSTGRES_PASSWORD:-assetchain}@postgres:5432/${POSTGRES_DB:-assetchain}
+      RPC_URL: ${RPC_URL:-http://chain:8545}
+      CHAIN_ID: ${CHAIN_ID:-31337}
+      GAS_PRICE_MODE: ${GAS_PRICE_MODE:-auto}
+      DEPLOYER_PRIVATE_KEY: ${DEPLOYER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+      FERNET_KEY: ${FERNET_KEY:-0uS1lgnfu7t4CB-5Vho-SnN3L2AJmYSnWghlR5TkbmU=}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      retries: 30
+
+  frontend:
+    build: { context: ../frontend }
+    depends_on: [backend]
+    ports: ["5173:80"]
+
+volumes:
+  pgdata:

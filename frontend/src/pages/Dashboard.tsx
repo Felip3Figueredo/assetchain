@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api";
 import { formatTokens } from "../format";
 import { Card, Empty, ErrorNote, PageHeader, Stat } from "../ui";
@@ -53,12 +53,12 @@ export default function Dashboard() {
           <div className="h-64 p-3">
             {series.length === 0 ? <Empty>Sem transferências confirmadas ainda.</Empty> : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series}>
+                <BarChart data={series}>
                   <CartesianGrid stroke="#D8E0E2" vertical={false} />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} width={70} tickFormatter={(v) => formatTokens(v)} />
                   <Tooltip formatter={(v: number) => formatTokens(v)} />
-                  <Area dataKey="volume" name="Tokens movimentados" stroke="#B97800" fill="#F2A71B" fillOpacity={0.35} />
-                </AreaChart>
+                  <Bar isAnimationActive={false} dataKey="volume" name="Tokens movimentados" fill="#F2A71B" radius={[4, 4, 0, 0]} maxBarSize={56} />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>
@@ -68,7 +68,7 @@ export default function Dashboard() {
             {dist.length === 0 ? <Empty>Nenhum ativo tokenizado.</Empty> : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={dist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85}>
+                  <Pie isAnimationActive={false} data={dist} dataKey="value" nameKey="name" innerRadius={50} outerRadius={85}>
                     {dist.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                   </Pie>
                   <Tooltip formatter={(v: number) => formatTokens(v)} />
