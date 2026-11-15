@@ -22,3 +22,5 @@ export interface TokenInfo {
 export interface Holder { address: string; label: string | null; balance: string; share_pct: number }
 export interface Supply { total_supply: string; cap: string; symbol: string; contract_address: string }
 export interface Block { number: number; hash: string; parent_hash: string; timestamp: number; tx_count: number; gas_used: number }
+export interface Consensus { consensus: "QBFT" | "automine"; validators: string[]; count: number; fault_tolerance: number; quorum: number; peer_count: number }
+export interface ChainBlock { number: number; hash: string; timestamp: number; tx_count: number; gas_used: number; proposer: string }

@@ -22,6 +22,8 @@ Documentação interativa em `http://localhost:8000/docs`. Quantidades são stri
 | GET | `/api/transactions` · `/api/transactions/{hash}` | lista / detalha |
 | GET | `/api/blockchain/status` · `/network` | estado da rede |
 | GET | `/api/blockchain/blocks/latest` | último bloco |
+| GET | `/api/blockchain/blocks?limit=20` | blocos recentes com o validador que propôs cada um |
+| GET | `/api/blockchain/validators` | consenso, validadores, quórum, tolerância a falhas e pares |
 | GET | `/api/blockchain/transactions/{hash}` | transação direto do nó |
 | GET | `/api/dashboard/stats` | métricas do painel |
 | GET | `/api/health` | liveness |

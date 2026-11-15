@@ -211,6 +211,16 @@ def latest_block(g: TokenGateway = Depends(get_gateway)):
     return g.client.latest_block().__dict__
 
 
+@router.get("/blockchain/blocks", tags=["blockchain"])
+def recent_blocks(limit: int = Query(10, ge=1, le=100), g: TokenGateway = Depends(get_gateway)):
+    return g.client.recent_blocks(limit)
+
+
+@router.get("/blockchain/validators", tags=["blockchain"])
+def validators(g: TokenGateway = Depends(get_gateway)):
+    return g.client.consensus_info()
+
+
 @router.get("/blockchain/transactions/{tx_hash}", tags=["blockchain"])
 def chain_transaction(tx_hash: str, g: TokenGateway = Depends(get_gateway)):
     info = g.client.get_transaction(tx_hash)

@@ -121,6 +121,37 @@ class ChainClient:
         return self.w3.eth.get_balance(address)
 
     @rpc_guard
+    def recent_blocks(self, limit: int) -> list[dict]:
+        """Newest-first blocks with the validator that proposed each one (the header's coinbase)."""
+        latest = self.w3.eth.block_number
+        out = []
+        for n in range(latest, max(latest - limit, -1), -1):
+            b = self.w3.eth.get_block(n)
+            out.append({"number": b["number"], "hash": b["hash"].to_0x_hex(), "timestamp": b["timestamp"],
+                        "tx_count": len(b["transactions"]), "gas_used": b["gasUsed"],
+                        "proposer": Web3.to_checksum_address(b["miner"])})
+        return out
+
+    @rpc_guard
+    def consensus_info(self) -> dict:
+        """QBFT validator set when the node exposes it; otherwise describe a single automining node."""
+        try:
+            resp = self.w3.provider.make_request("qbft_getValidatorsByBlockNumber", ["latest"])
+            validators = [Web3.to_checksum_address(a) for a in resp.get("result", [])] if "error" not in resp else []
+        except Exception as exc:
+            if isinstance(exc, (requests.exceptions.RequestException, OSError)):
+                raise
+            validators = []
+        try:
+            peers = self.w3.net.peer_count
+        except Exception:
+            peers = 0
+        n = len(validators)
+        return {"consensus": "QBFT" if n else "automine", "validators": validators, "count": n,
+                "fault_tolerance": (n - 1) // 3 if n else 0, "quorum": -(-2 * n // 3) if n else 0,
+                "peer_count": peers}
+
+    @rpc_guard
     def latest_block(self) -> BlockInfo:
         b = self.w3.eth.get_block("latest")
         return BlockInfo(

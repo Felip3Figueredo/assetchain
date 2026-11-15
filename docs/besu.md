@@ -27,6 +27,20 @@ curl -s -X POST localhost:8545 -H 'content-type: application/json' \
   --data '{"jsonrpc":"2.0","id":1,"method":"net_peerCount","params":[]}'   # 0x3
 ```
 
+## Ver o consenso na tela
+
+Abra **Rede** no dashboard (http://localhost:5173/network). A página mostra o consenso (QBFT), os 4 validadores, o quórum (3 votos), quantos blocos cada validador propôs nos últimos 20 e quem propôs cada bloco, atualizando a cada 3 segundos. Endpoints: `GET /api/blockchain/validators` e `GET /api/blockchain/blocks?limit=20`.
+
+Teste de tolerância a falhas:
+
+```bash
+docker stop assetchain-besu-4-1     # 1 de 4 validadores cai: a rede continua produzindo blocos
+docker stop assetchain-besu-3-1     # 2 de 4 caem: sem quórum (3), os blocos param
+docker start assetchain-besu-3-1 assetchain-besu-4-1
+```
+
+Com um validador fora, a tela mostra "Sem propor nos últimos blocos" para ele (após cerca de 40 s, quando a janela de 20 blocos já passou por todo o rodízio) e o aviso de pares desconectados. Em rede Hardhat a página explica que é um nó único.
+
 ## O que muda em relação ao Hardhat
 
 | Configuração | Hardhat (Fase 1) | Besu (Fase 2) |

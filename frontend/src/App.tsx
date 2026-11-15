@@ -6,12 +6,14 @@ import Assets from "./pages/Assets";
 import AssetDetail from "./pages/AssetDetail";
 import Wallets from "./pages/Wallets";
 import Transactions from "./pages/Transactions";
+import Network from "./pages/Network";
 
 const NAV = [
   { to: "/", label: "Painel", end: true },
   { to: "/assets", label: "Ativos" },
   { to: "/wallets", label: "Carteiras" },
   { to: "/transactions", label: "Transações" },
+  { to: "/network", label: "Rede" },
 ];
 
 function Sidebar() {
@@ -55,6 +57,7 @@ export default function App() {
           <Route path="/assets/:id" element={<AssetDetail />} />
           <Route path="/wallets" element={<Wallets />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/network" element={<Network />} />
         </Routes>
       </main>
     </div>
