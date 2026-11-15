@@ -1,6 +1,6 @@
 # API
 
-Documentação interativa em `http://localhost:8000/docs`. Quantidades são strings decimais em tokens inteiros (ex.: `"100000"`). Erros: `{"error": {"code", "message"}}`. `Idempotency-Key` é opcional nos `POST` de deploy e transferência.
+Documentação interativa em `http://localhost:8000/docs`. Quantidades são strings decimais em tokens inteiros (ex.: `"100000"`). Erros: `{"error": {"code", "message"}}`. Com `API_KEY` configurada, envie `X-API-Key` (exceto em `/api/health`). `Idempotency-Key` é opcional nos `POST` de deploy e transferência.
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
@@ -28,4 +28,4 @@ Documentação interativa em `http://localhost:8000/docs`. Quantidades são stri
 
 ## Códigos de erro principais
 
-`ASSET_NOT_FOUND` 404 · `ASSET_CODE_EXISTS` 409 · `INVALID_STATE` 409 · `NOT_APPROVED` 409 · `ALREADY_TOKENIZED` 409 · `INSUFFICIENT_BALANCE` 422 · `INVALID_AMOUNT` 422 · `VALIDATION_ERROR` 422 · `CONTRACT_REVERT` 409 · `RPC_UNAVAILABLE` 503.
+`ASSET_NOT_FOUND` 404 · `ASSET_CODE_EXISTS` 409 · `INVALID_STATE` 409 · `NOT_APPROVED` 409 · `ALREADY_TOKENIZED` 409 · `INSUFFICIENT_BALANCE` 422 · `INVALID_AMOUNT` 422 · `VALIDATION_ERROR` 422 · `CONTRACT_REVERT` 409 · `IDEMPOTENCY_KEY_REUSED` 409 · `DEPLOY_IN_PROGRESS` / `MINT_IN_PROGRESS` / `TRANSFER_IN_PROGRESS` 409 · `UNAUTHORIZED` 401 · `RPC_UNAVAILABLE` 503 · `RPC_TIMEOUT` 504.

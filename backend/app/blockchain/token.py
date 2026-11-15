@@ -47,19 +47,22 @@ class TokenGateway:
         return self.w3.eth.contract(address=Web3.to_checksum_address(address), abi=self.abi)
 
     @rpc_guard
-    def deploy(self, name: str, symbol: str, asset_id: str, cap_wei: int) -> DeployResult:
+    def deploy_send(self, name: str, symbol: str, asset_id: str, cap_wei: int) -> str:
+        """Broadcast the deployment and return its hash (NOT a confirmation)."""
         factory = self.w3.eth.contract(abi=self.abi, bytecode=self.bytecode)
         tx = factory.constructor(name, symbol, asset_id, cap_wei, self.deployer_address).build_transaction(
-            {"from": self.deployer_address, "gas": 5_000_000, "gasPrice": 1,
-             "nonce": 0, "chainId": self.client.settings.chain_id}
-        )
+            {"from": self.deployer_address, "gas": 1, "gasPrice": 1, "nonce": 0,
+             "chainId": self.client.settings.chain_id})
         for k in ("nonce", "gas", "gasPrice"):
             tx.pop(k, None)
-        tx_hash = self.client.send_signed(tx, self._deployer_key)
-        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=self.client.settings.receipt_timeout_s)
-        if receipt["status"] != 1:
+        return self.client.send_signed(tx, self._deployer_key)
+
+    def deploy(self, name: str, symbol: str, asset_id: str, cap_wei: int) -> DeployResult:
+        tx_hash = self.deploy_send(name, symbol, asset_id, cap_wei)
+        receipt = self.client.wait_receipt(tx_hash)
+        if not receipt.success or not receipt.contract_address:
             raise AppError(409, "DEPLOY_FAILED", "Contract deployment reverted")
-        return DeployResult(address=receipt["contractAddress"], tx_hash=tx_hash, block=receipt["blockNumber"])
+        return DeployResult(address=receipt.contract_address, tx_hash=tx_hash, block=receipt.block_number)
 
     @rpc_guard
     def mint(self, contract_address: str, to: str, amount_wei: int) -> str:

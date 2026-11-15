@@ -76,7 +76,7 @@ Detalhes em [docs/tokenization-flow.md](docs/tokenization-flow.md).
 Requisitos: Docker e Docker Compose v2.
 
 ```bash
-cp .env.example .env   # opcional: os padrões já funcionam
+cp .env.example .env   # opcional: os padrões já funcionam (defina API_KEY para proteger a API)
 docker compose up --build
 ```
 
@@ -88,7 +88,7 @@ docker compose up --build
 
 Na primeira subida o backend aplica as migrações e roda o seed (2 ativos em rascunho e 3 carteiras de teste). Para subir já com a Usina Solar Alpha tokenizada e uma transferência de exemplo, use `SEED_DEMO=true docker compose up --build`.
 
-> A blockchain de desenvolvimento **não persiste** estado. Se reiniciar só o container `chain`, o PostgreSQL ficará apontando para contratos que não existem mais (o backend avisa no log). Use `docker compose down -v` para resetar tudo.
+> A blockchain de desenvolvimento **não persiste** estado. Se reiniciar só o container `chain`, o backend detecta, limpa os dados órfãos e refaz o seed ao subir. Use `docker compose down -v` para resetar tudo.
 
 ### Demonstração passo a passo
 
@@ -164,10 +164,12 @@ Referência completa em [docs/api.md](docs/api.md).
 ## Segurança e limites do ambiente experimental
 
 - Apenas contas e chaves **de teste** (as contas públicas do Hardhat). Não use fundos ou carteiras reais.
-- Chaves privadas das carteiras criadas pela plataforma ficam **criptografadas (Fernet)** no banco; a chave mestra vem do ambiente. **A `FERNET_KEY` de exemplo do `.env.example`/compose é pública**: gere a sua para qualquer uso além da demonstração local. Em produção isso seria um KMS/HSM.
+- Chaves privadas das carteiras criadas pela plataforma ficam **criptografadas (Fernet)** no banco. A chave mestra é **gerada por instalação** no primeiro start e guardada no volume `appdata` (arquivo `0600`); você também pode fornecer a sua em `FERNET_KEY`. Em produção isso seria um KMS/HSM.
+- **Autenticação opcional:** defina `API_KEY` e toda rota `/api` (exceto `/api/health`) exige o cabeçalho `X-API-Key`. O nginx do dashboard injeta a chave, então a porta 8000 fica protegida contra acesso direto. Não há login por usuário nem papéis.
 - A tesouraria usa a chave pública nº 0 do Hardhat, conhecida por qualquer pessoa: **a rede é descartável**.
-- A API não tem autenticação nem autorização por usuário. Foi omitida de propósito por escopo; seria o primeiro item de uma versão real.
-- Validação de entrada (endereços, quantidades), tratamento de erros RPC (503/409), emissão limitada pelo `cap` do contrato e **idempotência** (`Idempotency-Key`) em deploy e transferência.
+- Validação de entrada (endereços, quantidades), tratamento de erros RPC (503/409/504), emissão limitada pelo `cap` do contrato.
+- **Idempotência** (`Idempotency-Key`) em deploy e transferência: a chave é reservada antes de enviar à chain, fica amarrada à operação e aos dados, e timeouts de recibo são retomados pelo hash em vez de repetir a transação.
+- Nonces são serializados por conta; criar carteira só persiste depois de financiá-la.
 - Nenhum dado pessoal ou documento é gravado na blockchain.
 - Não há KYC, custódia, conformidade regulatória nem marketplace.
 
@@ -175,9 +177,10 @@ Mais em [docs/blockchain.md](docs/blockchain.md).
 
 ## Limitações
 
-- A blockchain local do Hardhat é efêmera (sem persistência) e tem um único nó.
+- A blockchain local do Hardhat é efêmera (sem persistência) e tem um único nó. Se só ela reiniciar, no ambiente Docker o backend detecta os contratos órfãos, limpa os dados da aplicação e refaz o seed (`AUTO_RESET_ON_CHAIN_MISMATCH=true`, só para desenvolvimento; desligado, ele apenas avisa no log).
 - O indexador roda sob demanda (ao consultar detentores ou após transferências), não como processo contínuo.
-- Sem autenticação, sem reorgs (a rede local tem finalidade imediata), sem suporte a múltiplas redes simultâneas.
+- Sem login por usuário, sem reorgs (a rede local tem finalidade imediata), sem suporte a múltiplas redes simultâneas.
+- No Besu o permissionamento é por **nó**, não por conta (veja [docs/besu.md](docs/besu.md)).
 - Os valores em R$ são apenas metadados informativos; não há preço de mercado.
 
 ## Ethereum, ETH, contratos, ERC-20 e tipos de rede

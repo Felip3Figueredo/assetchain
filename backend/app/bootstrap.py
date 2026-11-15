@@ -45,14 +45,10 @@ def main() -> None:
     from sqlalchemy.orm import sessionmaker
 
     from app.blockchain.token import TokenGateway
-    from app.services.health import stale_contracts
+    from app.services.health import reconcile_chain_reset
 
     with sessionmaker(bind=engine)() as session:
-        stale = stale_contracts(session, TokenGateway(ChainClient(settings)))
-    if stale:
-        log.warning("chain_database_mismatch", assets=stale,
-                    hint="The dev chain was reset but PostgreSQL still references old contracts. "
-                         "Run `docker compose down -v` to reset both.")
+        reconcile_chain_reset(session, TokenGateway(ChainClient(settings)), settings.auto_reset_on_chain_mismatch)
 
 
 if __name__ == "__main__":

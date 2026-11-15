@@ -5,7 +5,7 @@ set -euo pipefail
 API="${1:-http://localhost:8000}"
 j() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
 step() { printf '\n\033[1;36m== %s\033[0m\n' "$1"; }
-call() { curl -fsS "$@"; }
+call() { curl -fsS ${API_KEY:+-H "X-API-Key: $API_KEY"} "$@"; }
 
 step "1. Blockchain status"
 call "$API/api/blockchain/status" | python3 -m json.tool

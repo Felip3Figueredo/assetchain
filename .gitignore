@@ -8,3 +8,4 @@ typechain-types/
 dist/
 .pytest_cache/
 *.db
+.data/

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import threading
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 
@@ -51,6 +52,7 @@ class Receipt:
     success: bool
     block_number: int
     gas_used: int
+    contract_address: str | None = None
 
 
 def rpc_guard(fn: Callable[..., T]) -> Callable[..., T]:
@@ -89,9 +91,15 @@ class ChainClient:
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._locks: dict[str, threading.Lock] = {}
+        self._locks_guard = threading.Lock()
         self.w3 = Web3(Web3.HTTPProvider(settings.rpc_url, request_kwargs={"timeout": 10}))
         if settings.poa_chain:
             self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+
+    def _sender_lock(self, address: str) -> threading.Lock:
+        with self._locks_guard:
+            return self._locks.setdefault(address, threading.Lock())
 
     def is_connected(self) -> bool:
         try:
@@ -137,7 +145,8 @@ class ChainClient:
     @rpc_guard
     def wait_receipt(self, tx_hash: str, timeout: int | None = None) -> Receipt:
         r = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=timeout or self.settings.receipt_timeout_s)
-        return Receipt(tx_hash=tx_hash, success=r["status"] == 1, block_number=r["blockNumber"], gas_used=r["gasUsed"])
+        return Receipt(tx_hash=tx_hash, success=r["status"] == 1, block_number=r["blockNumber"], gas_used=r["gasUsed"],
+                       contract_address=r.get("contractAddress"))
 
     @rpc_guard
     def get_receipt(self, tx_hash: str) -> Receipt | None:
@@ -147,18 +156,20 @@ class ChainClient:
             if exc.__class__.__name__ == "TransactionNotFound":
                 return None
             raise
-        return Receipt(tx_hash=tx_hash, success=r["status"] == 1, block_number=r["blockNumber"], gas_used=r["gasUsed"])
+        return Receipt(tx_hash=tx_hash, success=r["status"] == 1, block_number=r["blockNumber"], gas_used=r["gasUsed"],
+                       contract_address=r.get("contractAddress"))
 
     @rpc_guard
     def send_signed(self, tx: dict, private_key: str) -> str:
         """Fill nonce/chain/gas, simulate, sign locally and broadcast. Returns tx hash (NOT a confirmation)."""
         acct = self.w3.eth.account.from_key(private_key)
         tx = {**tx, "from": acct.address, "chainId": self.settings.chain_id}
-        tx["nonce"] = self.w3.eth.get_transaction_count(acct.address, "pending")
-        if self.settings.gas_price_mode == "zero":
-            tx["gasPrice"] = 0
-        else:
-            tx["gasPrice"] = int(self.w3.eth.gas_price * 1.25) or 1
-        tx["gas"] = int(self.w3.eth.estimate_gas(tx) * 1.2)  # raises ContractLogicError on revert
-        signed = acct.sign_transaction(tx)
-        return self.w3.eth.send_raw_transaction(signed.raw_transaction).to_0x_hex()
+        with self._sender_lock(acct.address):  # serialize nonce allocation per sender
+            tx["nonce"] = self.w3.eth.get_transaction_count(acct.address, "pending")
+            if self.settings.gas_price_mode == "zero":
+                tx["gasPrice"] = 0
+            else:
+                tx["gasPrice"] = int(self.w3.eth.gas_price * 1.25) or 1
+            tx["gas"] = int(self.w3.eth.estimate_gas(tx) * 1.2)  # raises ContractLogicError on revert
+            signed = acct.sign_transaction(tx)
+            return self.w3.eth.send_raw_transaction(signed.raw_transaction).to_0x_hex()

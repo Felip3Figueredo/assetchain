@@ -18,8 +18,8 @@
 ## Limites de segurança do ambiente experimental
 
 - **Chave da tesouraria pública.** O padrão usa a conta nº 0 do Hardhat; qualquer pessoa conhece essa chave. Use somente em rede local descartável.
-- **Chave mestra Fernet** vem do `.env`. O valor padrão do compose é de demonstração; gere a sua.
-- **Sem autenticação.** Qualquer cliente que alcance a API pode operar. Seria o primeiro requisito em uma versão real.
+- **Chave mestra Fernet**: gerada por instalação e guardada em arquivo `0600` no volume `appdata` (ou fornecida em `FERNET_KEY`).
+- **Autenticação por API key opcional** (`API_KEY`, cabeçalho `X-API-Key`); não há login por usuário nem papéis. Seria o primeiro requisito em uma versão real.
 - **Sem KYC/AML, custódia ou conformidade legal.** Tokens são participações econômicas fictícias, sem efeito jurídico.
 - **Sem dados pessoais** on-chain.
 

@@ -27,9 +27,13 @@ services:
       CHAIN_ID: ${CHAIN_ID:-31337}
       GAS_PRICE_MODE: ${GAS_PRICE_MODE:-auto}
       DEPLOYER_PRIVATE_KEY: ${DEPLOYER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
-      FERNET_KEY: ${FERNET_KEY:-0uS1lgnfu7t4CB-5Vho-SnN3L2AJmYSnWghlR5TkbmU=}
+      FERNET_KEY: ${FERNET_KEY:-}
+      FERNET_KEY_FILE: /data/fernet.key
+      API_KEY: ${API_KEY:-}
+      AUTO_RESET_ON_CHAIN_MISMATCH: ${AUTO_RESET_ON_CHAIN_MISMATCH:-true}
       SEED_DEMO: ${SEED_DEMO:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes: [appdata:/data]
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
@@ -38,8 +42,11 @@ services:
 
   frontend:
     build: { context: ../frontend }
+    environment:
+      API_KEY: ${API_KEY:-}
     depends_on: [backend]
     ports: ["5173:80"]
 
 volumes:
   pgdata:
+  appdata:

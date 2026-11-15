@@ -27,11 +27,11 @@ class WalletService:
         existing = self.repo.by_address(address)
         if existing:
             return existing
+        if fund:
+            self._fund(address)  # fund first: a failure must not leave an unfunded wallet behind
         wallet = self.repo.add(Wallet(address=address, label=label,
                                       encrypted_key=encrypt_key(private_key, self.settings.fernet_key)))
         self.s.commit()
-        if fund:
-            self._fund(address)
         log.info("wallet_registered", address=address, label=label)
         return wallet
 

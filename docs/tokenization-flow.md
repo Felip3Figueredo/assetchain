@@ -16,3 +16,4 @@
 - O deploy é retomável: se o contrato foi implantado mas o mint falhou, uma nova chamada emite sem reimplantar.
 - A transferência valida saldo antes de enviar e nunca marca `CONFIRMED` sem recibo `status == 1`.
 - Falhas de RPC não deixam estado inconsistente: o ativo permanece `APPROVED` se o deploy não concluiu.
+- Se o recibo do deploy ou da emissão não chegar a tempo (504), a transação fica `PENDING` com o hash; repetir a chamada (mesma chave) consulta a chain e conclui sem reimplantar nem emitir de novo. Se ainda não foi minerada, retorna 409 `DEPLOY_IN_PROGRESS` / `MINT_IN_PROGRESS`.

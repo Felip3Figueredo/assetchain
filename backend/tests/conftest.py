@@ -63,7 +63,7 @@ def settings(chain_url, monkeypatch):
         _env_file=None, rpc_url=chain_url, chain_id=CHAIN_ID,
         poa_chain=bool(EXTERNAL_RPC), gas_price_mode="zero" if EXTERNAL_RPC else "auto", database_url="sqlite://",
         deployer_private_key=KEYS[0], artifact_path=str(ARTIFACT),
-        fernet_key="", receipt_timeout_s=20,
+        fernet_key="", fernet_key_file="/nonexistent/never-used", receipt_timeout_s=20,
     )
 
 

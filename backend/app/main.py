@@ -12,6 +12,7 @@ from app.blockchain.token import TokenGateway
 from app.core.config import Settings, get_settings
 from app.core.db import make_engine
 from app.core.errors import register_error_handlers
+from app.core.security import ensure_fernet_key
 from app.core.logging import configure_logging, get_logger
 from app.services.wallet_service import WalletService
 
@@ -19,6 +20,7 @@ from app.services.wallet_service import WalletService
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
+    ensure_fernet_key(settings)
     log = get_logger("app")
 
     engine = make_engine(settings.database_url)
@@ -42,6 +44,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.gateway = gateway
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
     register_error_handlers(app)
+
+    if settings.api_key:
+        import hmac
+
+        from fastapi import Request
+
+        @app.middleware("http")
+        async def _require_api_key(request: Request, call_next):
+            path = request.url.path
+            if path.startswith("/api") and path != "/api/health" and request.method != "OPTIONS":
+                supplied = request.headers.get("x-api-key", "")
+                if not hmac.compare_digest(supplied, settings.api_key):
+                    return JSONResponse(status_code=401, content={"error": {
+                        "code": "UNAUTHORIZED", "message": "Missing or invalid X-API-Key"}})
+            return await call_next(request)
 
     @app.exception_handler(RequestValidationError)
     async def _validation(_, exc: RequestValidationError):

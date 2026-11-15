@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     rpc_url: str = "http://127.0.0.1:8545"
     chain_id: int = 31337
     deployer_private_key: str = HARDHAT_ACCOUNT_0
-    fernet_key: str = ""
+    fernet_key: str = ""  # leave empty to auto-generate a private key in fernet_key_file
+    fernet_key_file: str = ".data/fernet.key"
+    api_key: str = ""  # when set, every /api route except /api/health requires header X-API-Key
+    auto_reset_on_chain_mismatch: bool = False  # dev only: wipe app data if the chain was reset
     artifact_path: str = "../blockchain/artifacts-export/AssetToken.json"
     poa_chain: bool = False  # True for QBFT/IBFT/Clique chains (Besu): long extraData in block headers
     gas_price_mode: str = "auto"  # "auto" | "zero" (permissioned chains with free gas)
@@ -23,4 +26,8 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    from app.core.security import ensure_fernet_key
+
+    settings = Settings()
+    ensure_fernet_key(settings)
+    return settings
